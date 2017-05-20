@@ -33,7 +33,7 @@ public class BeingsWithUI extends GUIState {
     }
 
     public static String getName() {
-        return "Simulation de créatures";
+        return "Simulation d'insectes";
     }
 
     public void start() {

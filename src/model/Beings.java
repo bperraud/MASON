@@ -5,7 +5,8 @@ import sim.field.grid.SparseGrid2D;
 import sim.util.Int2D;
 
 public class Beings extends SimState {
-    public SparseGrid2D yard = new SparseGrid2D(Constants.GRID_SIZE, Constants.GRID_SIZE);
+    public  SparseGrid2D yard      = new SparseGrid2D(Constants.GRID_SIZE, Constants.GRID_SIZE);
+    private int          nbInsects = Constants.NUM_INSECTS;
 
     public Beings(long seed) {
         super(seed);
@@ -27,6 +28,7 @@ public class Beings extends SimState {
             yard.setObjectLocation(insect, location);
             insect.x = location.x;
             insect.y = location.y;
+            System.out.println("i = " + i + ", x = " + location.x + ", y = " + location.y);
             insect.stoppable = schedule.scheduleRepeating(insect);
         }
     }
@@ -77,6 +79,10 @@ public class Beings extends SimState {
     }
 
     public int getNbInsects() {
-        return Constants.NUM_INSECTS;
+        return nbInsects;
+    }
+
+    public void setNbInsects(int nbInsects) {
+        this.nbInsects = nbInsects;
     }
 }

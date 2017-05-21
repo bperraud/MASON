@@ -9,6 +9,7 @@ import sim.util.IntBag;
 
 import java.util.Random;
 
+@SuppressWarnings("SuspiciousNameCombination")
 public class TypeInsect implements Steppable {
     public int x, y;
     Stoppable stoppable;
@@ -113,8 +114,9 @@ public class TypeInsect implements Steppable {
 
             // I need to find some food nearby
             // Check if I've got food at my feet...
-            int     index           = 0;
-            boolean foodAtFeetFound = false;
+            int     index            = 0;
+            boolean foodAtFeetFound  = false;
+            int     minDistanceFound = Constants.GRID_SIZE * 2;
 
             for (Object object : neighbours) {
                 int x = xPos.get(index);
@@ -125,6 +127,7 @@ public class TypeInsect implements Steppable {
                     System.out.println("I found some food");
                     System.out.println("Food found at " + x + ", " + y);
                     System.out.println("I'm at " + this.x + ", " + this.y);
+
                     // and it's at my feet or just close to me, great!
                     int minX  = Math.min(this.x, x);
                     int maxX  = Math.max(this.x, x);
@@ -133,16 +136,18 @@ public class TypeInsect implements Steppable {
                     int maxY  = Math.max(this.y, y);
                     int diffY = Math.min((maxY - minY), Constants.GRID_SIZE - (maxY - minY));
 
-                    if ((x == this.x && y == this.y) || (diffX <= 1 && diffY <= 1)) {
+                    if (diffX <= 1 && diffY <= 1) {
                         System.out.println("Let's eat it");
                         eat((Food) object);
                         foodAtFeetFound = true;
                         break;
                     }
                     // but I've got to reach it, god damn it... :(
-                    else if (dest == null) {
+                    else if (dest == null || (diffX + diffY) < minDistanceFound) {
                         System.out.println("I've got to move towards it");
                         dest = prepareMoveToCell(x, y);
+                        System.out.println("Planned dest : " + dest[0] + ", " + dest[1]);
+                        minDistanceFound = diffX + diffY;
                     }
                 }
                 index++;
@@ -170,8 +175,9 @@ public class TypeInsect implements Steppable {
             System.out.println("I'm cool and intend to load my back");
 
             // Check if I've got food at my feet...
-            int     index           = 0;
-            boolean foodAtFeetFound = false;
+            int     index            = 0;
+            boolean foodAtFeetFound  = false;
+            int     minDistanceFound = Constants.GRID_SIZE * 2;
 
             for (Object object : neighbours) {
                 int x = xPos.get(index);
@@ -181,7 +187,15 @@ public class TypeInsect implements Steppable {
                 if (object instanceof Food) {
                     System.out.println("Food found at " + x + ", " + y);
                     System.out.println("I'm at " + this.x + ", " + this.y);
+
                     // and it's at my feet, great!
+                    int minX  = Math.min(this.x, x);
+                    int maxX  = Math.max(this.x, x);
+                    int diffX = Math.min((maxX - minX), Constants.GRID_SIZE - (maxX - minX));
+                    int minY  = Math.min(this.y, y);
+                    int maxY  = Math.max(this.y, y);
+                    int diffY = Math.min((maxY - minY), Constants.GRID_SIZE - (maxY - minY));
+
                     if (x == this.x && y == this.y) {
                         System.out.println("... at my feet exactly");
                         load();
@@ -189,9 +203,11 @@ public class TypeInsect implements Steppable {
                         break;
                     }
                     // but I've got to reach it, god damn it... :(
-                    else if (dest == null) {
+                    else if (dest == null || (diffX + diffY) < minDistanceFound) {
                         System.out.println("I need to go towards it");
                         dest = prepareMoveToCell(x, y);
+                        System.out.println("Planned dest : " + dest[0] + ", " + dest[1]);
+                        minDistanceFound = diffX + diffY;
                     }
                 }
                 index++;
@@ -219,124 +235,83 @@ public class TypeInsect implements Steppable {
 
     @SuppressWarnings("Duplicates")
     private Integer[] prepareMoveToCell(int x, int y) {
-        Integer[] dest           = new Integer[2];
-        int       minX           = Math.min(this.x, x);
-        int       maxX           = Math.max(this.x, x);
-        boolean   currPosXisLeft = this.x < x;
-        int       goForwardX;
-        if (currPosXisLeft) {
-            // Go forward
-            if ((maxX - minX) <= Constants.GRID_SIZE - (maxX - minX)) {
-                goForwardX = 1;
-            }
-            // Go backward
-            else {
-                goForwardX = -1;
-            }
-        } else {
-            // Go backward
-            if ((maxX - minX) <= Constants.GRID_SIZE - (maxX - minX)) {
-                goForwardX = -1;
-            }
-            // Go forward
-            else {
-                goForwardX = 1;
-            }
-        }
-        int     diffX          = Math.min((maxX - minX), Constants.GRID_SIZE - (maxX - minX));
-        int     minY           = Math.min(this.y, y);
-        int     maxY           = Math.max(this.y, y);
-        boolean currPosYisLeft = this.y < y;
-        int     goForwardY;
-        if (currPosYisLeft) {
-            // Go forward
-            if ((maxY - minY) <= Constants.GRID_SIZE - (maxY - minY)) {
-                goForwardY = 1;
-            }
-            // Go backward
-            else {
-                goForwardY = -1;
-            }
-        } else {
-            // Go backward
-            if ((maxY - minY) <= Constants.GRID_SIZE - (maxY - minY)) {
-                goForwardY = -1;
-            }
-            // Go forward
-            else {
-                goForwardY = 1;
-            }
-        }
-        int diffY       = Math.min((maxY - minY), Constants.GRID_SIZE - (maxY - minY));
-        int neededSteps = diffX + diffY;
+        Integer[] dest          = new Integer[2];
+        int       remainingMove = this.DISTANCE_DEPLACEMENT;
+        int       tempX         = this.x;
+        int       tempY         = this.y;
 
-        // I can go to my destination in one step! ^^
-        if (neededSteps <= this.DISTANCE_DEPLACEMENT) {
-            dest[0] = x;
-            dest[1] = y;
-            return dest;
+        while (!(tempX == x && tempY == y) && remainingMove > 0) {
+            Boolean mustGoForwardX = null;
+            Boolean mustGoForwardY = null;
+            // X calculs
+            if (tempX != x) {
+                int     minX                 = Math.min(tempX, x);
+                int     maxX                 = Math.max(tempX, x);
+                boolean currPosXisLeftOfDest = tempX < x;
+//                System.out.println("currPosXisLeftOfDest : " + currPosXisLeftOfDest);
+                mustGoForwardX = (maxX - minX) <= Constants.GRID_SIZE - (maxX - minX);
+                if (!currPosXisLeftOfDest) mustGoForwardX = !mustGoForwardX;
+            }
+            // Y calculs
+            if (tempY != y) {
+                int     minY                 = Math.min(tempY, y);
+                int     maxY                 = Math.max(tempY, y);
+                boolean currPosYisLeftOfDest = tempY < y;
+//                System.out.println("currPosYisLeftOfDest : " + currPosYisLeftOfDest);
+                mustGoForwardY = (maxY - minY) <= Constants.GRID_SIZE - (maxY - minY);
+                if (!currPosYisLeftOfDest) mustGoForwardY = !mustGoForwardY;
+            }
+//            System.out.println("mustGoForwardX : " + mustGoForwardX);
+//            System.out.println("mustGoForwardY : " + mustGoForwardY);
+
+            int direction;
+            if (mustGoForwardX == null) {
+                assert mustGoForwardY != null;
+                direction = mustGoForwardY ? 0 : 4;
+            } else if (mustGoForwardX) {
+                if (mustGoForwardY == null) direction = 2;
+                else if (mustGoForwardY) direction = 1;
+                else direction = 3;
+            } else {
+                if (mustGoForwardY == null) direction = 6;
+                else if (mustGoForwardY) direction = 7;
+                else direction = 5;
+            }
+
+            if (1 <= direction && direction <= 3) tempX++; // Right movement
+            if (5 <= direction) tempX--; // Left movement
+            if (direction <= 1 || direction == 7) tempY++; // Top movement
+            if (3 <= direction && direction <= 5) tempY--; // Bottom movement
+
+            // Re-center in the toric dim
+            tempX = Math.floorMod(tempX, Constants.GRID_SIZE);
+            tempY = Math.floorMod(tempY, Constants.GRID_SIZE);
+
+            remainingMove--;
         }
 
-        // Let's move on the X axis first
-        if (diffX <= diffY) {
-            int remainingMove = this.DISTANCE_DEPLACEMENT - diffX;
-
-            // I've still points to use for Y movement
-            if (remainingMove > 0) {
-                dest[0] = x;
-                dest[1] = Math.floorMod(this.y + (remainingMove * goForwardY), remainingMove);
-                return dest;
-            }
-            // No more points available
-            else {
-                dest[0] = Math.floorMod(this.x + (this.DISTANCE_DEPLACEMENT * goForwardX), this.DISTANCE_DEPLACEMENT);
-                dest[1] = this.y;
-                return dest;
-            }
-        }
-        // Let's move on the Y axis first
-        else {
-            int remainingMove = this.DISTANCE_DEPLACEMENT - diffY;
-
-            // I've still points to use for X movement
-            if (remainingMove > 0) {
-                dest[0] = Math.floorMod(this.x + (remainingMove * goForwardX), remainingMove);
-                dest[1] = y;
-                return dest;
-            }
-            // No more points available
-            else {
-                dest[0] = this.x;
-                dest[1] = Math.floorMod(this.y + (this.DISTANCE_DEPLACEMENT * goForwardY), this.DISTANCE_DEPLACEMENT);
-                return dest;
-            }
-        }
+        dest[0] = tempX;
+        dest[1] = tempY;
+        return dest;
     }
 
     private Integer[] prepareMoveToCell() {
-        Integer[] dest       = new Integer[2];
-        Random    random     = new Random();
-        int       goForwardX = random.nextInt(2) == 0 ? -1 : 1;
-        int       goForwardY = random.nextInt(2) == 0 ? -1 : 1;
-        int       x          = 0;
-        int       y          = 0;
+        Integer[] dest   = new Integer[2];
+        Random    random = new Random();
+        int       x      = 0;
+        int       y      = 0;
 
         for (int i = 0; i < DISTANCE_DEPLACEMENT; i++) {
             // Lancer de dé
-            int result = random.nextInt(2);
-
-            switch (result) {
-                case 0:
-                    x++;
-                    break;
-                case 1:
-                    y++;
-                    break;
-            }
+            int direction = random.nextInt(8);  // Cardinal directions by anticlockwise rotation, 0 = North
+            if (1 <= direction && direction <= 3) x++;  // Right movement
+            if (5 <= direction) x--;                    // Left movement
+            if (direction <= 1 || direction == 7) y++;  // Top movement
+            if (3 <= direction && direction <= 5) y--;  // Bottom movement
         }
 
-        dest[0] = Math.floorMod(x * goForwardX, Constants.GRID_SIZE);
-        dest[1] = Math.floorMod(y * goForwardY, Constants.GRID_SIZE);
+        dest[0] = Math.floorMod(x, Constants.GRID_SIZE);
+        dest[1] = Math.floorMod(y, Constants.GRID_SIZE);
         return dest;
     }
 
@@ -344,11 +319,15 @@ public class TypeInsect implements Steppable {
         return load == CHARGE_MAX;
     }
 
-    // TODO : Ask Moulin how getRadialNeighbours actually works
     private Bag perceive(IntBag xPos, IntBag yPos) {
+        // TODO: ask Moulin why xPos/yPos size may differ from the result one... :(
+        System.out.println("PERCEIVE BEGIN");
         Bag result = new Bag();
-//        xPos.
-        model.yard.getRadialNeighbors(x, y, DISTANCE_PERCEPTION, Grid2D.TOROIDAL, true, result, xPos, yPos);
+        model.yard.getRadialNeighborsAndLocations(x, y, DISTANCE_PERCEPTION, Grid2D.TOROIDAL, true, result, xPos, yPos);
+        System.out.println("result size : " + result.size());
+        System.out.println("xPos size : " + xPos.size());
+        System.out.println("yPos size : " + yPos.size());
+        System.out.println("PERCEIVE END");
         return result;
     }
 
@@ -367,8 +346,10 @@ public class TypeInsect implements Steppable {
     }
 
     private void move(int x, int y) {
+        System.out.println("Move at " + x + ", " + y);
         if (--energy <= 0) {
             kill();
+            System.out.println("Noooo, I'm out of energy... I DIE X(");
             return;
         }
 

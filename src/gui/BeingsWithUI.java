@@ -49,24 +49,23 @@ public class BeingsWithUI extends GUIState {
     private void setupPortrayals() {
         Beings beings = (Beings) state;
         yardPortrayal.setField(beings.yard);
-        yardPortrayal.setPortrayalForClass(TypeInsect.class, getTypeAPortrayal());
-        yardPortrayal.setPortrayalForClass(Food.class, getTypeBPortrayal());
-        //yardPortrayal.setPortrayalForClass(Food.class, new StrangeOvalPortrayal());
+        yardPortrayal.setPortrayalForClass(TypeInsect.class, getInsectPortrayal());
+        yardPortrayal.setPortrayalForClass(Food.class, getFoodPortrayal());
         display.reset();
         display.setBackdrop(Color.orange);
         // redraw the display
-        //addBackgroundImage();
+//        addBackgroundImage();
         display.repaint();
     }
 
-    private OvalPortrayal2D getTypeAPortrayal() {
+    private OvalPortrayal2D getInsectPortrayal() {
         OvalPortrayal2D r = new OvalPortrayal2D();
         r.paint = Color.RED;
         r.filled = true;
         return r;
     }
 
-    private OvalPortrayal2D getTypeBPortrayal() {
+    private OvalPortrayal2D getFoodPortrayal() {
         OvalPortrayal2D r = new OvalPortrayal2D();
         r.paint = Color.GRAY;
         r.filled = true;

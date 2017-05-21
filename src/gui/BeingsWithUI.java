@@ -28,6 +28,8 @@ public class BeingsWithUI extends GUIState {
     private JFrame    displayFrame;
     private SparseGridPortrayal2D yardPortrayal = new SparseGridPortrayal2D();
 
+    // TODO: cf chart creation
+
     public BeingsWithUI(SimState state) {
         super(state);
     }
@@ -52,7 +54,7 @@ public class BeingsWithUI extends GUIState {
         yardPortrayal.setPortrayalForClass(TypeInsect.class, getInsectPortrayal());
         yardPortrayal.setPortrayalForClass(Food.class, getFoodPortrayal());
         display.reset();
-        display.setBackdrop(Color.orange);
+        display.setBackdrop(Color.GREEN);
         // redraw the display
 //        addBackgroundImage();
         display.repaint();
@@ -60,6 +62,7 @@ public class BeingsWithUI extends GUIState {
 
     private OvalPortrayal2D getInsectPortrayal() {
         OvalPortrayal2D r = new OvalPortrayal2D();
+        r.scale = 0.8;
         r.paint = Color.RED;
         r.filled = true;
         return r;

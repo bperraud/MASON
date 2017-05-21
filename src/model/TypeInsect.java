@@ -5,6 +5,7 @@ import sim.engine.Steppable;
 import sim.engine.Stoppable;
 import sim.field.grid.Grid2D;
 import sim.util.Bag;
+import sim.util.Int2D;
 import sim.util.IntBag;
 
 import java.util.Random;
@@ -85,19 +86,7 @@ public class TypeInsect implements Steppable {
         Integer[] dest       = null;
 
         System.out.println("--- NEW STEP ---");
-        System.out.println("Pos : " + this.x + ", " + this.y);
-        System.out.println("neighbours :");
-        System.out.println(neighbours.size());
-        System.out.println(xPos.size());
-        System.out.println(yPos.size());
-        int i = 0;
-        for (Object neighbour : neighbours) {
-            System.out.println("type : " + neighbour.getClass().toString());
-            System.out.println("xPos " + xPos.get(i));
-            System.out.println("yPos " + yPos.get(i));
-            i++;
-        }
-        System.out.println();
+        System.out.println("My current pos : " + this.x + ", " + this.y);
 
         boolean isHungry = energy <= HUNGRY_THRESHOLD;
 
@@ -175,9 +164,9 @@ public class TypeInsect implements Steppable {
             System.out.println("I'm cool and intend to load my back");
 
             // Check if I've got food at my feet...
-            int     index            = 0;
-            boolean foodAtFeetFound  = false;
-            int     minDistanceFound = Constants.GRID_SIZE * 2;
+            int     index              = 0;
+            boolean foodAtFeetFound    = false;
+            double  minDistanceSqFound = Constants.GRID_SIZE * 2;
 
             for (Object object : neighbours) {
                 int x = xPos.get(index);
@@ -189,12 +178,7 @@ public class TypeInsect implements Steppable {
                     System.out.println("I'm at " + this.x + ", " + this.y);
 
                     // and it's at my feet, great!
-                    int minX  = Math.min(this.x, x);
-                    int maxX  = Math.max(this.x, x);
-                    int diffX = Math.min((maxX - minX), Constants.GRID_SIZE - (maxX - minX));
-                    int minY  = Math.min(this.y, y);
-                    int maxY  = Math.max(this.y, y);
-                    int diffY = Math.min((maxY - minY), Constants.GRID_SIZE - (maxY - minY));
+                    double sqDist = model.yard.getObjectLocation(object).distanceSq(getCurrentLocation());
 
                     if (x == this.x && y == this.y) {
                         System.out.println("... at my feet exactly");
@@ -203,11 +187,11 @@ public class TypeInsect implements Steppable {
                         break;
                     }
                     // but I've got to reach it, god damn it... :(
-                    else if (dest == null || (diffX + diffY) < minDistanceFound) {
+                    else if (dest == null || sqDist < minDistanceSqFound) {
                         System.out.println("I need to go towards it");
                         dest = prepareMoveToCell(x, y);
                         System.out.println("Planned dest : " + dest[0] + ", " + dest[1]);
-                        minDistanceFound = diffX + diffY;
+                        minDistanceSqFound = sqDist;
                     }
                 }
                 index++;
@@ -248,7 +232,6 @@ public class TypeInsect implements Steppable {
                 int     minX                 = Math.min(tempX, x);
                 int     maxX                 = Math.max(tempX, x);
                 boolean currPosXisLeftOfDest = tempX < x;
-//                System.out.println("currPosXisLeftOfDest : " + currPosXisLeftOfDest);
                 mustGoForwardX = (maxX - minX) <= Constants.GRID_SIZE - (maxX - minX);
                 if (!currPosXisLeftOfDest) mustGoForwardX = !mustGoForwardX;
             }
@@ -257,12 +240,9 @@ public class TypeInsect implements Steppable {
                 int     minY                 = Math.min(tempY, y);
                 int     maxY                 = Math.max(tempY, y);
                 boolean currPosYisLeftOfDest = tempY < y;
-//                System.out.println("currPosYisLeftOfDest : " + currPosYisLeftOfDest);
                 mustGoForwardY = (maxY - minY) <= Constants.GRID_SIZE - (maxY - minY);
                 if (!currPosYisLeftOfDest) mustGoForwardY = !mustGoForwardY;
             }
-//            System.out.println("mustGoForwardX : " + mustGoForwardX);
-//            System.out.println("mustGoForwardY : " + mustGoForwardY);
 
             int direction;
             if (mustGoForwardX == null) {
@@ -284,8 +264,8 @@ public class TypeInsect implements Steppable {
             if (3 <= direction && direction <= 5) tempY--; // Bottom movement
 
             // Re-center in the toric dim
-            tempX = Math.floorMod(tempX, Constants.GRID_SIZE);
-            tempY = Math.floorMod(tempY, Constants.GRID_SIZE);
+            tempX = model.yard.stx(tempX);
+            tempY = model.yard.sty(tempY);
 
             remainingMove--;
         }
@@ -310,8 +290,8 @@ public class TypeInsect implements Steppable {
             if (3 <= direction && direction <= 5) y--;  // Bottom movement
         }
 
-        dest[0] = Math.floorMod(x, Constants.GRID_SIZE);
-        dest[1] = Math.floorMod(y, Constants.GRID_SIZE);
+        dest[0] = model.yard.stx(x);
+        dest[1] = model.yard.sty(y);
         return dest;
     }
 
@@ -320,14 +300,8 @@ public class TypeInsect implements Steppable {
     }
 
     private Bag perceive(IntBag xPos, IntBag yPos) {
-        // TODO: ask Moulin why xPos/yPos size may differ from the result one... :(
-        System.out.println("PERCEIVE BEGIN");
         Bag result = new Bag();
-        model.yard.getRadialNeighborsAndLocations(x, y, DISTANCE_PERCEPTION, Grid2D.TOROIDAL, true, result, xPos, yPos);
-        System.out.println("result size : " + result.size());
-        System.out.println("xPos size : " + xPos.size());
-        System.out.println("yPos size : " + yPos.size());
-        System.out.println("PERCEIVE END");
+        model.yard.getMooreNeighborsAndLocations(x, y, DISTANCE_PERCEPTION, Grid2D.TOROIDAL, result, xPos, yPos);
         return result;
     }
 
@@ -355,6 +329,7 @@ public class TypeInsect implements Steppable {
 
         this.x = x;
         this.y = y;
+        model.yard.getObjectLocation(this).distance(this.x, this.y);
         model.yard.setObjectLocation(this, this.x, this.y);
     }
 
@@ -375,5 +350,9 @@ public class TypeInsect implements Steppable {
     private void kill() {
         model.yard.remove(this);
         stoppable.stop();
+    }
+
+    private Int2D getCurrentLocation() {
+        return model.yard.getObjectLocation(this);
     }
 }

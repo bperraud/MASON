@@ -28,7 +28,6 @@ public class Beings extends SimState {
             yard.setObjectLocation(insect, location);
             insect.x = location.x;
             insect.y = location.y;
-            System.out.println("i = " + i + ", x = " + location.x + ", y = " + location.y);
             insect.stoppable = schedule.scheduleRepeating(insect);
         }
     }
@@ -50,12 +49,6 @@ public class Beings extends SimState {
         f.x = location.x;
         f.y = location.y;
     }
-
-//    public boolean free(int x, int y) {
-//        int xx = yard.stx(x);
-//        int yy = yard.sty(y);
-//        return yard.getObjectsAtLocation(xx, yy) == null;
-//    }
 
     private Int2D getRandomLocation() {
         return new Int2D(

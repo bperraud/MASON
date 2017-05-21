@@ -22,5 +22,6 @@ public class Food {
             model.yard.remove(this);
             generateNewFoodUnit();
         }
+        System.out.println("Food quant. left on the ground : " + quantity);
     }
 }
